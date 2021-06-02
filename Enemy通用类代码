@@ -7,9 +7,9 @@ public class Enemy : MonoBehaviour
     EnemyBaseState currentState;
 
     public Animator anim;
-    public int animState;
+    public int animState;//动画切换，0是idle，2是attack
 
-    private GameObject alamSign;
+    private GameObject alamSign;//警示标识动画对象
 
     [Header("Boss State")]
     public float health;
@@ -45,13 +45,13 @@ public class Enemy : MonoBehaviour
     {
         //SwitchPoint();
 
-        TransitionToState(patrolState);
+        TransitionToState(patrolState);//变更状态
     }
 
     void Update()
     {
         /*
-        if (Mathf.Abs(transform.position.x-targetPoint.position.x)<0.01f)
+        if (Mathf.Abs(transform.position.x-targetPoint.position.x)<0.01f)//当前对象坐标和目标坐标差小于某定值，变更当前对象的朝向
         {
             SwitchPoint();
         }
