@@ -1,0 +1,154 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class Enemy : MonoBehaviour
+{
+    EnemyBaseState currentState;
+
+    public Animator anim;
+    public int animState;
+
+    private GameObject alamSign;
+
+    [Header("Boss State")]
+    public float health;
+    public bool isDead;
+
+    [Header("Movement")]
+    public float speed;
+    public Transform pointA, pointB;
+    public Transform targetPoint;
+
+    [Header("Attack Setting")]
+    public float attackNext = 0;
+    public float attackRate;
+    public float attackRange, skillRange;
+
+    public List<Transform> attackList = new List<Transform>();
+
+    public PatrolState patrolState = new PatrolState();
+    public AttackState attackState = new AttackState();
+
+    public virtual void Init()
+    {
+        anim = GetComponent<Animator>();
+        alamSign = transform.GetChild(0).gameObject;
+    }
+
+    private void Awake()
+    {
+        Init();
+    }
+
+    void Start()
+    {
+        //SwitchPoint();
+
+        TransitionToState(patrolState);
+    }
+
+    void Update()
+    {
+        /*
+        if (Mathf.Abs(transform.position.x-targetPoint.position.x)<0.01f)
+        {
+            SwitchPoint();
+        }
+        MoveToTarget();
+        */
+        anim.SetBool("dead", isDead);
+        if (isDead)
+        {
+            return;
+        }
+
+        currentState.OnUpdate(this);
+        anim.SetInteger("state",animState);
+    }
+
+    public void TransitionToState(EnemyBaseState state)
+    {
+        currentState = state;
+        currentState.EnterState(this);
+    }
+
+    public void MoveToTarget()
+    {
+        transform.position = Vector2.MoveTowards(transform.position,targetPoint.position,speed*Time.deltaTime);
+
+        FilpDirection();
+    }
+
+    public void AttackAction()// To Player
+    {
+        if ((Vector2.Distance(transform.position,targetPoint.position)<attackRange) && (Time.time>attackNext))
+        {
+            //Debug.Log("Normal!!!");
+            anim.SetTrigger("attack");
+
+            attackNext = Time.time + attackRate;
+        }
+    }
+
+    public virtual void SkillAction()// To Bomb
+    {
+        if ((Vector2.Distance(transform.position, targetPoint.position) < skillRange) && (Time.time > attackNext))
+        {
+            //Debug.Log("Skill!!!");
+            anim.SetTrigger("skill");
+
+            attackNext = Time.time + attackRate;
+        }
+    }
+
+    public void FilpDirection()
+    {
+        if (transform.position.x<targetPoint.position.x)
+        {
+            transform.rotation = Quaternion.Euler(0,0,0);
+        }
+        else
+        {
+            transform.rotation = Quaternion.Euler(0, 180, 0);
+        }
+    }
+
+    public void SwitchPoint()
+    {
+        if (Mathf.Abs(pointA.position.x-transform.position.x)>Mathf.Abs(pointB.position.x-transform.position.x))
+        {
+            targetPoint = pointA;
+        }
+        else
+        {
+            targetPoint = pointB;
+        }
+    }
+
+    public void OnTriggerStay2D(Collider2D collision)
+    {
+        if (!attackList.Contains(collision.transform))
+        {
+            attackList.Add(collision.transform);
+        }
+    }
+
+    public void OnTriggerExit2D(Collider2D collision)
+    {
+        attackList.Remove(collision.transform);
+    }
+
+    public void OnTriggerEnter2D(Collider2D collision)
+    {
+        StartCoroutine(OnAlam());
+    }
+
+    IEnumerator OnAlam()
+    {
+        alamSign.SetActive(true);
+        yield return new WaitForSeconds(alamSign.GetComponent<Animator>().GetCurrentAnimatorClipInfo(0)[0].clip.length);
+        alamSign.SetActive(false);
+    }
+
+}
